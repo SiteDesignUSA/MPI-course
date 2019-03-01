@@ -1,6 +1,6 @@
 BASE=/home/${USER}
 
-REPO=git@gitlab.puppetspecialist.nl:puppet/control.git
+REPO=git@gitlab.com:puppet-infrastructure-management/control.git
 
 if [ "$USER" = 'root' ]
 then
