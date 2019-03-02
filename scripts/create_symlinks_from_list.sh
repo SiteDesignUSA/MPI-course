@@ -14,4 +14,6 @@ cd $DIR
 for TARGET in $(echo $LIST | tr "," "\n"); do
   ln -s "${TARGET}"
 done
+# Added from video 059 to link production
+ln -sfn $DIR/master $DIR/production
 exit 0
