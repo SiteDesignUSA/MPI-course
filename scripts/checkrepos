@@ -109,7 +109,7 @@ show_git_status() {
         echo Branch: $branch / $remote
         git status -s
 }
-echo "=== MAIN Puppet repo ==="
+echo "=== MAIN/CONTROL Puppet repo ==="
 git branch | grep '*' | awk -F' ' '{ print "Currently on branch", $2 }'
 show_git_status
 echo " "
