@@ -17,4 +17,4 @@ alias car="/usr/local/bin/checkrepos"
 #gffsa, git flow feature start all repos. Reference feature start script
 alias gffsa="/usr/local/bin/start_feature_branches"
 #lla, list all- even . files like .git etc.
-alias ll='ls -lah --color=auto'
+alias lla='ls -lah --color=auto'
