@@ -1,3 +1,4 @@
+# Global aliases for all users
 alias gs='git status'
 #gaa, git add all
 alias gaa='git add .'
@@ -11,3 +12,5 @@ alias lab='git branch -a'
 alias lar='git remote -v'
 #lbit, Local Branch Is Tracking (Local and Remote)
 alias lbit='git remote show origin'
+#car, Check All Repos. Reference CheckRepos script
+alias car="/usr/local/bin/checkrepos"
