@@ -174,7 +174,7 @@ CURRENT=`git branch | grep '\*' | awk '{print $2}'`
 cd "$ROOTDIR"
 echo "We are going to look at git status. No big deal."
 git status
-echo "${2} repo is now pointed to ${CURRENT} branch."
+echo "${3} repo is now pointed to ${CURRENT} branch."
 }
 
 # Start Commands
@@ -385,7 +385,7 @@ echo " "
             echo "Ok, we are deleting remote branch ${1} from $dir repo."
             tj_check_branch develop ${1} $dir
             echo " "
-            echo " "            
+            echo " "
         else
             echo "We are not deleting remote branch ${1} from $dir repo."
             # Delete local branch
