@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # @author: TJ Thomas
 # http://www.SiteDesignUSA.com
-# Filename: start-feature-branches.sh
+# Filename: delete-all-feature-branches.sh
 # Created:   3/30/2019
-# Modified:   3/30/2019
-#set -e
+# Modified:   4/2/2019
 
 # ===> Your script goes here
 
@@ -144,21 +143,22 @@ case $response in
 
 		echo "Switched to ${1} branch."
 
-
+# TJDO need to make this a loop to catch all the remotes and delete across all
 		#lets check if branch exists on remote
-	  REMOTEYESORNO=`git ls-remote --heads`
-		TESTFORREMOTEBRANCH=`case ${REMOTEYESORNO} in  *"${DELETEBRANCH}"* ) echo "YESREMOTEBRANCH";; *) echo "NOREMOTEBRANCH" ;; esac`
 
+  listgitremotes=$(git remote)
+  for gitremotes in $listgitremotes
+  do
+		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${WHATBRANCH}"; then
 
-		if [ ! "${TESTFORREMOTEBRANCH}" = "NOREMOTEBRANCH" ]; then
-
-		git push origin :${DELETEBRANCH}
-		echo "Remote branch is deleted."
+		git push "${gitremotes}" :${DELETEBRANCH}
+		echo "${DELETEBRANCH} branch is deleted from "${gitremotes}" remote."
 
 		else
 		echo "There is no remote branch to delete. Moving on."
 
 		fi
+  done
 
 		#Leave these here. It's part of case statement
 		git branch -D ${DELETEBRANCH}
@@ -176,8 +176,11 @@ echo "We are going to look at git status. No big deal."
 git status
 echo "${3} repo is now pointed to ${CURRENT} branch."
 }
+# END function
 
-# Start Commands
+
+
+# ======================Start Commands=======================================================================================
 
 if [ -z $1 ]; then
 	echo -e "\E[1;33;40mNo feature branch name given.\E[1;33;0m"
@@ -186,77 +189,159 @@ if [ -z $1 ]; then
 
 	exit 1
 fi
-
+# Make sure not master, develop, integration or testing.
+if [ "${1}" == "master" ] || [ "${1}" == "develop" ] || [ "${1}" == "integration" ] || [ "${1}" == "testing" ]
+then
+    echo -e "\e[41mWARNING! Do not delete ${1}.\e[0m"
+    echo -e "\E[1;33;40mYou cannot delete master, develop, integration or testing.\E[1;33;0m"
+    exit 0
+else
+    echo "Preparing to delete ${1} branch."
+fi
+# List branches and give choice whether to continue.
 echo "Changing to /dev_${USER} directory"
 cd ~/dev_${USER}
 echo "=== MAIN/CONTROL Puppet repo ==="
 git branch | grep '*' | awk -F' ' '{ print "Currently on branch", $2 }'
 show_git_status
 echo " "
-echo " "
 echo "We are now in $(pwd)"
 echo " "
 
 
 		#lets check if branch exists anywhere
-		DELETEBRANCH2=${1}
-		# git branch --list -a does not need git fetch to work. The grep -E command is looking for either/or. We need the
-		# spaces and asterisk for when the branch we want to delete is the active branch. Then we send through sed
-		# to clear any asterisks and finally pipe through xargs echo which clears any spaces so we can match our branch
-		# variable.
-	  BRANCHYESORNO=$(git branch --list -a | grep -E "^  ${DELETEBRANCH2}$|^* ${DELETEBRANCH2}$" | sed 's/*//g' | xargs echo -n)
-		TESTFORREMOTEBRANCH=`case ${BRANCHYESORNO} in  "${DELETEBRANCH2}" ) echo "YESBRANCH";; *) echo "NOBRANCH" ;; esac`
-
-		if [ ! "${TESTFORREMOTEBRANCH}" = "NOBRANCH" ]; then
+# TJDO how to check if more than one remote?
 
 
-		echo "There is a branch ${1} on the control repo."
 
-		else
-		echo -e "\E[1;33;40mThere is no branch ${1} on the control repo!!!!!!\E[1;33;0m"
-		echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
-		git branch --list -a "*${1}"
-		echo " "
-		echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
 
-		fi
+  listgitremotes=$(git remote)
+  # If git remotes empty
+  if [[ -z "${listgitremotes}" ]]
+  then
+    # List local branch that match
+    if [ git show-ref --quiet refs/heads/"${1}" ]
+    then
+    # We have no remotes so nothing on remote
+      echo "There is a branch ${1} on the local control repo but nothing on remotes."
+    else
+      # No remote and nothing local. Alarm!
+      echo -e "\E[1;33;40mThere is no branch ${1} on the control repo!!!!!!\E[1;33;0m"
+      echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
+      git branch --list -a "*${1}"
+      echo " "
+      echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
+    fi # END no remotes
+  else # remotes exist
+  # Now check for remote branches that match
+  LGR=(${listgitremotes}) # $listgitremotes is an array and need parenthesis to keep from displaying as one string
+  for gitremotes in "${LGR[@]}" # The [@] syntax tells the interpreter that this is an indexed array that we'll be iterating over.
+  do
+		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${1}"
+		then
+		  echo "There is a branch ${1} on the "${gitremotes}" remote in the control repo." # We have a match
+		# Anything locally?
+      if git show-ref --quiet refs/heads/"${1}"
+      then
+        echo "AND there is a branch ${1} on the local control repo."
+      else
+          echo -e "\E[1;33;40mBut... There is no local ${1} branch on the local control repo.\E[1;33;0m"
+      fi
+    else
+      # No remote match. What to do.
+      echo "No branch ${1} on the "${gitremotes}" remote in the control repo."
+      # Anything locally?
+      if git show-ref --quiet refs/heads/"${1}"
+      then
+        echo "But... there is a branch ${1} on the local control repo."
+      else
+          echo -e "\E[1;33;40mThere is no local ${1} branch on the local control repo.\E[1;33;0m"
+      fi
+    fi
+  done
+  # Anything locally?
+    if git show-ref --quiet refs/heads/"${1}"
+    then
+      echo "There is a branch ${1} on the local control repo."
+    else
+        echo -e "\E[1;33;40mThere is no branch ${1} on the local control repo!!!!!!\E[1;33;0m"
+        echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
+        git branch --list -a "*${1}"
+        echo " "
+        echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
+    fi
+  fi
 
 
 for dir in $(grep '^mod' Puppetfile | grep -v / | awk -F'"' '{ print $2}')
 do
-        cd modules/$dir > /dev/null
-        echo "=== Module $dir: modules/$dir ==="
-        show_git_status
+  cd modules/$dir > /dev/null
+  echo "=== Module $dir: modules/$dir ==="
+  show_git_status
 
-        echo " "
-echo "We are now in $(pwd)"
-echo " "
+  echo " "
+  echo "We are now in $(pwd)"
+  echo " "
 
-		#lets check if branch exists anywhere
-		DELETEBRANCH2=${1}
-		# git branch --list -a does not need git fetch to work. The grep -E command is looking for either/or. We need the
-		# spaces and asterisk for when the branch we want to delete is the active branch. Then we send through sed
-		# to clear any asterisks and finally pipe through xargs echo which clears any spaces so we can match our branch
-		# variable.
-	  BRANCHYESORNO=$(git branch --list -a | grep -E "^  ${DELETEBRANCH2}$|^* ${DELETEBRANCH2}$" | sed 's/*//g' | xargs echo -n)
-		TESTFORREMOTEBRANCH=`case ${BRANCHYESORNO} in  "${1}" ) echo "YESBRANCH";; *) echo "NOBRANCH" ;; esac`
-
-		if [ ! "${TESTFORREMOTEBRANCH}" = "NOBRANCH" ]; then
-
-
-		echo "There is a branch ${1} on the $dir repo."
-
-		else
-		echo -e "\E[1;33;40mThere is no branch ${1} on the $dir repo!!!!!!\E[1;33;0m"
-		echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
-		git branch --list -a "*${1}"
-		echo " "
-		echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
-
-		fi
-		        cd - > /dev/null
-        echo " "
-done
+  listgitremotes=$(git remote)
+  # If git remotes empty
+  if [[ -z "${listgitremotes}" ]]
+  then
+    # List local branch that match
+    if [ git show-ref --quiet refs/heads/"${1}" ]
+    then
+    # We have no remotes so nothing on remote
+      echo "There is a branch ${1} on the local control repo but nothing on remotes."
+    else
+      # No remote and nothing local. Alarm!
+      echo -e "\E[1;33;40mThere is no branch ${1} on the control repo!!!!!!\E[1;33;0m"
+      echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
+      git branch --list -a "*${1}"
+      echo " "
+      echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
+    fi # END no remotes
+  else # remotes exist
+  # Now check for remote branches that match
+  LGR=(${listgitremotes}) # $listgitremotes is an array and need parenthesis to keep from displaying as one string
+  for gitremotes in "${LGR[@]}" # The [@] syntax tells the interpreter that this is an indexed array that we'll be iterating over.
+  do
+		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${1}"
+		then
+		  echo "There is a branch ${1} on the "${gitremotes}" remote in the control repo." # We have a match
+		# Anything locally?
+      if git show-ref --quiet refs/heads/"${1}"
+      then
+        echo "AND there is a branch ${1} on the local control repo."
+      else
+          echo -e "\E[1;33;40mBut... There is no local ${1} branch on the local control repo.\E[1;33;0m"
+      fi
+    else
+      # No remote match. What to do.
+      echo "No branch ${1} on the "${gitremotes}" remote in the control repo."
+      # Anything locally?
+      if git show-ref --quiet refs/heads/"${1}"
+      then
+        echo "But... there is a branch ${1} on the local control repo."
+      else
+          echo -e "\E[1;33;40mThere is no local ${1} branch on the local control repo.\E[1;33;0m"
+      fi
+    fi
+  done
+    # Anything locally?
+      if git show-ref --quiet refs/heads/"${1}"
+      then
+        echo "There is a branch ${1} on the $dir repo."
+      else
+          echo -e "\E[1;33;40mThere is no branch ${1} on the local $dir repo!!!!!!\E[1;33;0m"
+          echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
+          git branch --list -a "*${1}"
+          echo " "
+          echo -e "\e[41mAre one of these the correct branch? If so, you should exit by choosing N below...\e[0m"
+      fi
+    fi
+  cd ~/dev_${USER}
+  echo " "
+done # Each repo in module dir
 echo "Changing to $WHEREAMINOW"
 cd $WHEREAMINOW
 
@@ -283,12 +368,12 @@ echo "Quitting script now. Please make corrections and re-run script."
 exit 0
 fi
 
+# END List branches and give choice whether to continue.
 
 
+############################################################################## START DELETE BRANCH ###################################
 
-############################################################################## START MAKE BRANCH ###################################
-
-# Do we want to publish after creating these branches?
+# Do we want to delete remotes
 #Initialize quit so we enter the outer loop first time
 quit="N"
 # Loop while quit is N
@@ -331,7 +416,7 @@ if [[ "${DELETE}" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 echo "Ok, we are deleting remote branches ${1} as well as locally."
 else
-echo "We won't delete remote branch ${1}."
+echo "We won't delete remote branches for ${1}."
 fi
 
 echo "Changing to /dev_${USER} directory"
