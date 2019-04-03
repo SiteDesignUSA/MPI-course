@@ -1,0 +1,320 @@
+#!/usr/bin/env bash
+# @author: TJ Thomas
+# http://www.SiteDesignUSA.com
+# Filename: checkout-branch-all-repos.sh
+# Created:   3/30/2019
+# Modified:   4/2/2019
+
+
+# ===> Your script goes here
+
+# Variables
+WHEREAMINOW=$(pwd)
+# Functions
+# helper functions
+count_lines() { echo "$1" | egrep -c "^$2" ; }
+all_lines() { echo "$1" | grep -v "^$" | wc -l ; }
+show_git_status() {
+        # gitstatus.sh -- produce the current git repo status on STDOUT
+        # Functionally equivalent to 'gitstatus.py', but written in bash (not python).
+        #
+        # Alan K. Stebbens <aks@stebbens.org> [http://github.com/aks]
+        if [ -z "${__GIT_PROMPT_DIR}" ]; then
+          SOURCE="${BASH_SOURCE[0]}"
+          while [ -h "${SOURCE}" ]; do
+            DIR="$( cd -P "$( dirname "${SOURCE}" )" && pwd )"
+            SOURCE="$(readlink "${SOURCE}")"
+            [[ $SOURCE != /* ]] && SOURCE="${DIR}/${SOURCE}"
+          done
+          __GIT_PROMPT_DIR="$( cd -P "$( dirname "${SOURCE}" )" && pwd )"
+        fi
+
+        gitsym=`git symbolic-ref HEAD`
+
+        # if "fatal: Not a git repo .., then exit
+        case "$gitsym" in fatal*) exit 0 ;; esac
+
+        # the current branch is the tail end of the symbolic reference
+        branch="${gitsym##refs/heads/}"    # get the basename after "refs/heads/"
+
+        gitstatus=`git diff --name-status 2>&1`
+
+        # if the diff is fatal, exit now
+        case "$gitstatus" in fatal*) exit 0 ;; esac
+
+
+        staged_files=`git diff --staged --name-status`
+
+        num_changed=$(( `all_lines "$gitstatus"` - `count_lines "$gitstatus" U` ))
+        num_conflicts=`count_lines "$staged_files" U`
+        num_staged=$(( `all_lines "$staged_files"` - num_conflicts ))
+        num_untracked=`git ls-files --others --exclude-standard $(git rev-parse --show-cdup) | wc -l`
+        if [[ "$__GIT_PROMPT_IGNORE_STASH" = "1" ]]; then
+          num_stashed=0
+        else
+          num_stashed=`git stash list | wc -l`
+        fi
+
+        clean=0
+        if (( num_changed == 0 && num_staged == 0 && num_U == 0 && num_untracked == 0 && num_stashed == 0 )) ; then
+          clean=1
+        fi
+
+        remote=
+
+        if [[ -z "$branch" ]]; then
+          tag=`git describe --exact-match`
+          if [[ -n "$tag" ]]; then
+            branch="$tag"
+          else
+            branch="_PREHASH_`git rev-parse --short HEAD`"
+          fi
+        else
+          remote_name=`git config branch.${branch}.remote`
+
+          if [[ -n "$remote_name" ]]; then
+            merge_name=`git config branch.${branch}.merge`
+          else
+            remote_name='origin'
+            merge_name="refs/heads/${branch}"
+          fi
+
+          if [[ "$remote_name" == '.' ]]; then
+            remote_ref="$merge_name"
+          else
+            remote_ref="refs/remotes/$remote_name/${merge_name##refs/heads/}"
+          fi
+
+          # detect if the local branch have a remote tracking branch
+          cmd_output=$(git rev-parse --abbrev-ref ${branch}@{upstream} 2>&1 >/dev/null)
+
+          if [ `count_lines "$cmd_output" "fatal: No upstream"` == 1 ] ; then
+            has_remote_tracking=0
+          else
+            has_remote_tracking=1
+          fi
+
+          # get the revision list, and count the leading "<" and ">"
+          revgit=`git rev-list --left-right ${remote_ref}...HEAD`
+          num_revs=`all_lines "$revgit"`
+          num_ahead=`count_lines "$revgit" "^>"`
+          num_behind=$(( num_revs - num_ahead ))
+          if (( num_behind > 0 )) ; then
+            remote="${remote}_BEHIND_${num_behind}"
+          fi
+          if (( num_ahead > 0 )) ; then
+            remote="${remote}_AHEAD_${num_ahead}"
+          fi
+        fi
+
+        if [[ -z "$remote" ]] ; then
+          remote='.'
+        fi
+
+        if [[ "$has_remote_tracking" == "0" ]] ; then
+          remote='_NO_REMOTE_TRACKING_'
+        fi
+        echo Branch: $branch / $remote
+        git status -s
+}
+
+# Start Commands
+
+
+echo "Changing to /dev_${USER} directory"
+cd ~/dev_${USER}
+echo "=== MAIN/CONTROL Puppet repo ==="
+git branch | grep '*' | awk -F' ' '{ print "Currently on branch", $2 }'
+show_git_status
+
+echo -e "\E[1;33;40mListing branches in Control Repo\E[1;33;0m"
+echo " "
+git fetch --all
+git branch --list -a
+echo " "
+
+for dir in $(grep '^mod' Puppetfile | grep -v / | awk -F'"' '{ print $2}')
+do
+        cd modules/$dir > /dev/null
+        echo "=== Module $dir: modules/$dir ==="
+        show_git_status
+        echo -e "\E[1;33;40mListing branches in $dir Repo\E[1;33;0m"
+        echo " "
+        git fetch --all
+        git branch --list -a
+        echo " "
+        cd - > /dev/null
+        echo " "
+done
+echo "Changing to $WHEREAMINOW"
+cd $WHEREAMINOW
+
+
+ #reset quit - so we enter the inner loop first time
+ quit=""
+ #we want to repeat until quit is Y or N:
+ #while quit is not "Y" and quit is not "N"
+   while [ "$quit" != "Y" -a "$quit" != "N" ]
+   do
+     echo -e "\E[1;33;40mDo you see the branch you want to checkout? Do you want to continue?\E[1;33;0m"
+     echo "Y means all the repos contain the branch and you want to continue, N means exit script and correct issues. Continue? Y/N?"
+     read quit
+
+ #Convert lower case y/n to Y/N
+     quit=`echo $quit | tr yn YN`
+   done
+# Do we continue?
+if [[ "${quit}" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+echo "Ok, we are continuing script."
+else
+echo "Quitting script now. Please make corrections and re-run script."
+exit 0
+fi
+
+
+
+
+############################################################################## START MAKE BRANCH ###################################
+
+# What branch?
+while [[ -z "${WHATBRANCH}" ]]
+do
+echo "Enter What branch do you want to checkout across all repos?"
+  read -ep "Copy and paste or type branch name here : " WHATBRANCH
+  echo ""
+   echo "Copy and paste or type branch name here :					${WHATBRANCH}"
+   echo "=========================================================================="
+ #reset quit - so we enter the inner loop first time
+ quit=""
+
+ #we want to repeat until quit is Y or N:
+ #while quit is not "Y" and quit is not "N"
+   while [ "$quit" != "Y" -a "$quit" != "N" ]
+   do
+     echo "Are the values correct? Continue? Y/N?"
+     read quit
+
+ #Convert lower case y/n to Y/N
+     quit=`echo $quit | tr yn YN`
+   done
+done
+
+# Make sure not master, develop, integration or testing.
+if [ "${WHATBRANCH}" == "master" ] || [ "${WHATBRANCH}" == "develop" ] || [ "${WHATBRANCH}" == "integration" ] || [ "${WHATBRANCH}" == "testing" ]
+then
+    echo -e "\E[1;33;40mThe branch names are different in the module repos from the Control repo. There is another\E[1;33;0m"
+    echo -e "\E[1;33;40mscript for checking out all the top level branches. Please use that one.\E[1;33;0m"
+    exit 0
+else
+    echo "Preparing to switch branches."
+fi
+
+echo "Changing to /dev_${USER} directory"
+cd ~/dev_${USER}
+echo "=== MAIN/CONTROL Puppet repo ==="
+git branch | grep '*' | awk -F' ' '{ print "Currently on branch", $2 }'
+show_git_status
+echo " "
+# We already git fetched up at line 132 so don't need to here.
+# Does the branch exist locally?
+
+if git show-ref --quiet refs/heads/"${WHATBRANCH}"; then
+    echo "${WHATBRANCH} branch exists locally"
+    echo "Checking out ${WHATBRANCH} branch."
+    git checkout "${WHATBRANCH}"
+    echo -e "\E[1;33;40mLet's look at where local branch ${WHATBRANCH} is compared to origin/${WHATBRANCH}\E[1;33;0m"
+
+    exists=$(git diff --stat --color "${WHATBRANCH}"..origin/"${WHATBRANCH}")
+    if [ -n "$exists" ]; then
+        git diff --stat --color "${WHATBRANCH}"..origin/"${WHATBRANCH}"
+    else
+        echo "${1} is up to date with remote origin/${WHATBRANCH}"
+    fi
+else
+	echo "${WHATBRANCH} branch does not exist locally. Checking to see if exists on remote repo."
+	if git show-ref --quiet refs/remotes/origin/"${WHATBRANCH}"; then
+    echo "${WHATBRANCH} branch exists on origin remote"
+    echo "Checking out ${WHATBRANCH} branch from origin."
+    git checkout -b "${WHATBRANCH}" origin/"${WHATBRANCH}"
+  else
+	  echo "${WHATBRANCH} branch does not exist on origin remote"
+	  echo "Please make sure branch exists somewhere on origin or locally and run this again or manually."
+	  exit 0
+  fi
+fi
+
+echo " "
+CURRENT=`git branch | grep '\*' | awk '{print $2}'`
+cd "$ROOTDIR"
+echo "We are going to look at git status. No big deal."
+git status
+echo "${dir} repo is now pointed to ${CURRENT} branch."
+echo " "
+
+
+
+
+
+
+for dir in $(grep '^mod' Puppetfile | grep -v / | awk -F'"' '{ print $2}')
+do
+        cd modules/$dir > /dev/null
+        echo "=== Module $dir: modules/$dir ==="
+        show_git_status
+
+        echo "We are now in $(pwd)"
+
+        if git show-ref --quiet refs/heads/"${WHATBRANCH}"; then
+            echo "${WHATBRANCH} branch exists locally"
+            echo "Checking out ${WHATBRANCH} branch."
+            git checkout "${WHATBRANCH}"
+            echo -e "\E[1;33;40mLet's look at where local branch ${WHATBRANCH} is compared to origin/${WHATBRANCH}\E[1;33;0m"
+
+            exists=$(git diff --stat --color "${WHATBRANCH}"..origin/"${WHATBRANCH}")
+            if [ -n "$exists" ]; then
+                git diff --stat --color "${WHATBRANCH}"..origin/"${WHATBRANCH}"
+            else
+                echo "${1} is up to date with remote origin/${WHATBRANCH}"
+            fi
+        else
+          echo "${WHATBRANCH} branch does not exist locally. Checking to see if exists on remote repo."
+          if git show-ref --quiet refs/remotes/origin/"${WHATBRANCH}"; then
+            echo "${WHATBRANCH} branch exists on origin remote"
+            echo "Checking out ${WHATBRANCH} branch from origin."
+            git checkout -b "${WHATBRANCH}" origin/"${WHATBRANCH}"
+          else
+            echo "${WHATBRANCH} branch does not exist on origin remote"
+            echo "Please make sure branch exists somewhere on origin or locally and run this again or manually."
+            exit 0
+          fi
+        fi
+
+        echo " "
+        echo " "
+        CURRENT=`git branch | grep '\*' | awk '{print $2}'`
+        cd "$ROOTDIR"
+        echo "We are going to look at git status. No big deal."
+        git status
+        echo "${dir} repo is now pointed to ${CURRENT} branch."
+        echo " "
+
+        # back to dev folder of user.
+        cd ~/dev_${USER} > /dev/null
+        echo " "
+done
+echo "Changing to $WHEREAMINOW"
+cd $WHEREAMINOW
+
+
+
+
+
+
+# <=== Your script goes here
+# All Done
+
+
+
+
+
