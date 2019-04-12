@@ -16,6 +16,8 @@ alias lbit='git remote show origin'
 alias car="/usr/local/bin/checkrepos"
 #gffsa, git flow feature start all repos. Reference feature start script
 alias gffsa="/usr/local/bin/start_feature_branches"
+#gffsa, git flow feature pull all repos. Reference feature start script
+alias gffpa="/usr/local/bin/start_feature_branches"
 #dabnm, delete all branches no merge. Instead of git flow feature or release finish.
 alias dabnm="/usr/local/bin/delete_all_branch_no_merge"
 #lla, list all- even . files like .git etc.
