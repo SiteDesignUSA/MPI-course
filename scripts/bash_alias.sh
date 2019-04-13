@@ -13,7 +13,7 @@ alias lar='git remote -v'
 #lbit, Local Branch Is Tracking (Local and Remote)
 alias lbit='git remote show origin'
 #ptb, Prune Tracking Branches (Local and Remote)
-alias ptb='git fetch --prune && git branch -r | awk '{print $1}' | egrep -v -f /dev/fd/0 <(git branch -vv | grep origin) | awk '{print $1}' | xargs git branch -d'
+alias ptb=$(git fetch --prune && git branch -r | awk '{print $1}' | egrep -v -f /dev/fd/0 <(git branch -vv | grep origin) | awk '{print $1}' | xargs git branch -d)
 #car, Check All Repos. Reference CheckRepos script
 alias car="/usr/local/bin/checkrepos"
 #gffsa, git flow feature start all repos. Reference feature start script
