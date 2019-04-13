@@ -146,8 +146,8 @@ case $response in
 # TJDO need to make this a loop to catch all the remotes and delete across all
 		#lets check if branch exists on remote
 
-  listgitremotes=$(git remote)
-  for gitremotes in $listgitremotes
+  LGR=(${listgitremotes}) # $listgitremotes is an array and need parenthesis to keep from displaying as one string
+  for gitremotes in "${LGR[@]}" # The [@] syntax tells the interpreter that this is an indexed array that we'll be iterating over.
   do
 		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${WHATBRANCH}"; then
 
