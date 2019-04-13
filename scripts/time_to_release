@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# @author: TJ Thomas
+# http://www.SiteDesignUSA.com
+# Filename: time_to_release
+# Created:   4/13/2019
+# Modified:   4/13/2019
+
+set -e
+onexit()
+{
+echo "Error At line - $1"
+}
+trap "{ onexit \$LINENO ; }" ERR
+# Add your script below....
+# If an error occurs, the exit_trap() function will be called.
+#----------------------------------------------------------
+# ===> Your script goes here
+
+# Variables
+ROOTDIR=$(git rev-parse --show-toplevel)
+REPONAME=$(basename ${ROOTDIR})
+ref=$(git symbolic-ref HEAD 2> /dev/null | cut -b 12-)
+CURRENT=`git branch | grep '\*' | awk '{print $2}'`
+
+# Functions
+
+
+# Start Commands
+#what is happening?
+echo -e '\E[01;31m'"\033[1mWARNING WARNING WARNING WARNING WARNING WARNING...\033[0m"
+echo -e "\E[1;33;40mYou are on branch ${CURRENT}. If this is not the branch you want to be on, choose no and switch branches and try again.\E[1;33;0m"
+echo "You are about to finish a feature branch "${CURRENT}". This will print commands to finish "${CURRENT}", pull merged changes into develop/integration etc."
+
+
+echo "Do you want to continue?"
+
+read -r -p "Are you sure? [Y/n] " response
+case $response in
+    [yY][eE][sS]|[yY])
+
+# You said yes
+
+if git branch | grep integration
+then
+  echo -e "\e[41mYou should have merged your new feature first.\e[0m"
+  echo -e "\E[1;33;40mDid you change tag references before the merge?\E[1;33;0m"
+  echo "This script helps after the merge."
+  echo -e "\E[1;33;40mCopy the commands below as you have need. Remember to watch the status of the prompt.\E[1;33;0m"
+  echo "You should be on the Control Repo now."
+  echo "Here are the commands."
+  echo " "
+  echo "git checkout integration"
+  echo " "
+  echo "git branch -D ${CURRENT}"
+  echo " "
+  echo "git pull origin integration"
+  echo " "
+  echo "git status # only if needed"
+  echo " "
+  echo "git push origin integration #(if needed)"
+  echo " "
+  echo "git tag"
+  echo " "
+  echo "git flow release start # <paste tag here>"
+  echo " "
+  echo "# Copy and paste the git flow release finish line (don't forget the tag number)"
+  echo " "
+  echo "git push origin testing --tags"
+  echo " "
+  echo "# Make sure we are on integration branch"
+  echo " "
+  echo "git checkout integration"
+  echo " "
+  echo " "
+  echo "# You may need to push the back merged integration branch changes"
+  echo "git push origin integration # (if needed)"
+
+
+else
+  echo -e "\e[41mYou should have merged your new feature first.\e[0m"
+  echo "This script helps after the merge."
+  echo -e "\E[1;33;40mCopy the commands below as you have need. Remember to watch the status of the prompt.\E[1;33;0m"
+  echo "You should be on the ${REPONAME} Repo now."
+  echo "Here are the commands."
+  echo " "
+  echo "git checkout develop"
+  echo " "
+  echo "git branch -D ${CURRENT}"
+  echo " "
+  echo "git pull origin develop"
+  echo " "
+  echo "git status # only if needed"
+  echo " "
+  echo "git push origin develop # (if needed)"
+  echo " "
+  echo "git tag"
+  echo " "
+  echo "git flow release start # <paste tag here>"
+  echo " "
+  echo "# Copy and paste the git flow release finish line (don't forget the tag number)"
+  echo " "
+  echo "git push origin master --tags"
+  echo " "
+  echo "# Make sure we are on develop branch"
+  echo " "
+  echo "git checkout develop"
+  echo " "
+  echo " "
+  echo "# You may need to push the back merged develop branch changes"
+  echo "git push origin develop # (if needed)"
+  echo " "
+  echo " "
+  echo -e "\E[1;33;40mYou now need to finish the other modules (role, profile) and then Control.\E[1;33;0m"
+
+
+fi
+
+        ;;
+    *)
+
+        # You said no
+        echo "Bye"; exit
+        ;;
+esac
+
+
+
+
+
+echo -e "\E[1;33;40mStart a new feature by running gffsa <new branch name>\E[1;33;0m"
+echo " "
+echo " "
+echo "Good bye"
+echo " "
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# <=== Your script goes here
+# All Done
+
+
+
