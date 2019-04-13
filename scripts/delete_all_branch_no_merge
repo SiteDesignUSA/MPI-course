@@ -149,13 +149,15 @@ case $response in
   LGR=(${listgitremotes}) # $listgitremotes is an array and need parenthesis to keep from displaying as one string
   for gitremotes in "${LGR[@]}" # The [@] syntax tells the interpreter that this is an indexed array that we'll be iterating over.
   do
-		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${DELETEBRANCH}"; then
-
+		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${DELETEBRANCH}"
+		then
+    echo -e "\E[1;33;40mPreparing to delete branch "${DELETEBRANCH}" from "${gitremotes}" remote\E[1;33;0m"
 		git push "${gitremotes}" :${DELETEBRANCH}
 		echo "${DELETEBRANCH} branch is deleted from "${gitremotes}" remote."
 
 		else
-		echo "There is no remote branch to delete. Moving on."
+		echo "There is no branch "${DELETEBRANCH}" in "${gitremotes}" remote to delete. Moving on."
+		
 
 		fi
   done
@@ -291,10 +293,10 @@ do
     if [ git show-ref --quiet refs/heads/"${1}" ]
     then
     # We have no remotes so nothing on remote
-      echo "There is a branch ${1} on the local control repo but nothing on remotes."
+      echo "There is a branch ${1} on the local $dir repo but nothing on remotes."
     else
       # No remote and nothing local. Alarm!
-      echo -e "\E[1;33;40mThere is no branch ${1} on the control repo!!!!!!\E[1;33;0m"
+      echo -e "\E[1;33;40mThere is no branch ${1} on the $dir repo!!!!!!\E[1;33;0m"
       echo "Listing all branches local and remote branches that kind of match. (Did you mean feature/${1}?"
       git branch --list -a "*${1}"
       echo " "
@@ -307,23 +309,23 @@ do
   do
 		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${1}"
 		then
-		  echo "There is a branch ${1} on the "${gitremotes}" remote in the control repo." # We have a match
+		  echo "There is a branch ${1} on the "${gitremotes}" remote in the $dir repo." # We have a match
 		# Anything locally?
       if git show-ref --quiet refs/heads/"${1}"
       then
-        echo "AND there is a branch ${1} on the local control repo."
+        echo "AND there is a branch ${1} on the local $dir repo."
       else
-          echo -e "\E[1;33;40mBut... There is no local ${1} branch on the local control repo.\E[1;33;0m"
+          echo -e "\E[1;33;40mBut... There is no local ${1} branch on the local $dir repo.\E[1;33;0m"
       fi
     else
       # No remote match. What to do.
-      echo "No branch ${1} on the "${gitremotes}" remote in the control repo."
+      echo "No branch ${1} on the "${gitremotes}" remote in the $dir repo."
       # Anything locally?
       if git show-ref --quiet refs/heads/"${1}"
       then
-        echo "But... there is a branch ${1} on the local control repo."
+        echo "But... there is a branch ${1} on the local $dir repo."
       else
-          echo -e "\E[1;33;40mThere is no local ${1} branch on the local control repo.\E[1;33;0m"
+          echo -e "\E[1;33;40mThere is no local ${1} branch on the local $dir repo.\E[1;33;0m"
       fi
     fi
   done
