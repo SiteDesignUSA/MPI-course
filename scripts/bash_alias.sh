@@ -20,7 +20,8 @@ alias car="/usr/local/bin/checkrepos"
 alias gffsa="/usr/local/bin/start_feature_branches"
 #gffsa, git flow feature pull all repos. Reference feature start script
 alias gffpa="/usr/local/bin/pull-branch-all-repos"
-
+#t2r, Time To Release. Script to give hints how to release feature.
+alias t2r="/usr/local/bin/time_to_release"
 #dabnm, delete all branches no merge. Instead of git flow feature or release finish.
 alias dabnm="/usr/local/bin/delete_all_branch_no_merge"
 #lla, list all- even . files like .git etc.
