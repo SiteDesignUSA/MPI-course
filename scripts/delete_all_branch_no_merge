@@ -149,7 +149,7 @@ case $response in
   LGR=(${listgitremotes}) # $listgitremotes is an array and need parenthesis to keep from displaying as one string
   for gitremotes in "${LGR[@]}" # The [@] syntax tells the interpreter that this is an indexed array that we'll be iterating over.
   do
-		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${WHATBRANCH}"; then
+		if git show-ref --quiet refs/remotes/"${gitremotes}"/"${DELETEBRANCH}"; then
 
 		git push "${gitremotes}" :${DELETEBRANCH}
 		echo "${DELETEBRANCH} branch is deleted from "${gitremotes}" remote."
