@@ -1,4 +1,6 @@
 # Global aliases for all users
+#gco, Git Checkout <Branch>
+alias gco='git checkout'
 alias gs='git status'
 #gaa, git add all
 alias gaa='git add .'
