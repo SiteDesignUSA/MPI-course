@@ -30,5 +30,7 @@ alias dabnm="/usr/local/bin/delete_all_branch_no_merge"
 alias lla='ls -lah --color=auto'
 #rten, r10k deploy environment -pv
 alias rten='r10k deploy environment -pv'
-#puptest, puppet agent -t --environment <branch>
-alias puptest='git branch; puppet agent -t --environment'
+#puptestenv, puppet agent -t --environment <branch>
+alias puptestenv='puppet agent -t --environment'
+#puptest, puppet agent -t (this runs production)
+alias puptest='puppet agent -t'
