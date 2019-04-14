@@ -28,3 +28,7 @@ alias t2r="/usr/local/bin/time_to_release"
 alias dabnm="/usr/local/bin/delete_all_branch_no_merge"
 #lla, list all- even . files like .git etc.
 alias lla='ls -lah --color=auto'
+#rten, r10k deploy environment -pv
+alias rten='r10k deploy environment -pv'
+#puptest, puppet agent -t --environment <branch>
+alias puptest='git branch; puppet agent -t --environment'
